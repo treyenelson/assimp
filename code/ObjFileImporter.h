@@ -98,6 +98,9 @@ private:
     //! \brief  Object counter helper method.
     void countObjects(const std::vector<ObjFile::Object*> &rObjects, int &iNumMeshes);
 
+    //! \brief  Embed texture.
+    aiString* embedTexture(const aiString* texture, aiScene* pScene);
+
     //! \brief  Material creation.
     void createMaterials(const ObjFile::Model* pModel, aiScene* pScene);
 
@@ -114,6 +117,8 @@ private:
     ObjFile::Object *m_pRootObject;
     //! Absolute pathname of model in file system
     std::string m_strAbsPath;
+    //! 
+    IOSystem* m_pIOHandler;
 };
 
 // ------------------------------------------------------------------------------------------------

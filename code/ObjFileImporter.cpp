@@ -117,6 +117,7 @@ const aiImporterDesc* ObjFileImporter::GetInfo () const
 // ------------------------------------------------------------------------------------------------
 //  Obj-file import implementation
 void ObjFileImporter::InternReadFile( const std::string &file, aiScene* pScene, IOSystem* pIOHandler) {
+    m_pIOHandler = pIOHandler;
     // Read file into memory
     static const std::string mode = "rb";
     std::unique_ptr<IOStream> fileStream( pIOHandler->Open( file, mode));
@@ -547,6 +548,36 @@ void ObjFileImporter::addTextureMappingModeProperty( aiMaterial* mat, aiTextureT
     mat->AddProperty<int>( &clampMode, 1, AI_MATKEY_MAPPINGMODE_V( type, index ) );
 }
 
+aiString* ObjFileImporter::embedTexture(const aiString* texture, aiScene* pScene) {
+    std::string filename = texture->C_Str();
+
+    int idx = pScene->mNumTextures;
+    pScene->mNumTextures++;
+
+    aiTexture* tex = pScene->mTextures[idx] = new aiTexture();
+
+    size_t byteLength;
+    IOStream* file = m_pIOHandler->Open(filename, "rb");
+    if (!file) {
+        throw DeadlyImportError("OBJ: could not open referenced file \"" + filename + "\"");
+    }
+    byteLength = file->FileSize();
+    uint8_t* mData = new uint8_t[byteLength];
+    if (file->Read(mData, byteLength, 1) != 1) {
+        throw DeadlyImportError("OBJ: error while reading referenced file \"" + filename + "\"" );
+    }
+    delete file;
+
+
+    tex->mWidth = static_cast<unsigned int>(byteLength);
+    tex->mHeight = 0;
+    tex->pcData = reinterpret_cast<aiTexel*>(mData);
+    std::string mime = filename.substr(filename.find(".") + 1);
+    strcpy(tex->achFormatHint, mime.c_str());
+
+    return new aiString("*" + idx);
+}
+
 // ------------------------------------------------------------------------------------------------
 //  Creates the material
 void ObjFileImporter::createMaterials(const ObjFile::Model* pModel, aiScene* pScene ) {
@@ -561,6 +592,7 @@ void ObjFileImporter::createMaterials(const ObjFile::Model* pModel, aiScene* pSc
         return;
     }
 
+    pScene->mTextures = new aiTexture*[pModel->m_TextureCount];
     pScene->mMaterials = new aiMaterial*[ numMaterials ];
     for ( unsigned int matIndex = 0; matIndex < numMaterials; matIndex++ )
     {
@@ -613,7 +645,7 @@ void ObjFileImporter::createMaterials(const ObjFile::Model* pModel, aiScene* pSc
 
         if ( 0 != pCurrentMaterial->texture.length )
         {
-            mat->AddProperty( &pCurrentMaterial->texture, AI_MATKEY_TEXTURE_DIFFUSE(0));
+            mat->AddProperty( embedTexture(&pCurrentMaterial->texture, pScene), AI_MATKEY_TEXTURE_DIFFUSE(0));
             mat->AddProperty( &uvwIndex, 1, AI_MATKEY_UVWSRC_DIFFUSE(0) );
             if (pCurrentMaterial->clamp[ObjFile::Material::TextureDiffuseType])
             {

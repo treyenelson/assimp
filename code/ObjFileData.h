@@ -287,6 +287,8 @@ struct Model {
     std::vector<Mesh*> m_Meshes;
     //! Material map
     std::map<std::string, Material*> m_MaterialMap;
+    //! Texture count
+    std::uint8_t m_TextureCount;
 
     //! \brief  The default class constructor
     Model() :
@@ -296,7 +298,8 @@ struct Model {
         m_pDefaultMaterial(NULL),
         m_pGroupFaceIDs(NULL),
         m_strActiveGroup(""),
-        m_pCurrentMesh(NULL)
+        m_pCurrentMesh(NULL),
+        m_TextureCount(0)
     {
         // empty
     }

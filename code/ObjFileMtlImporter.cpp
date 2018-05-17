@@ -377,6 +377,7 @@ void ObjFileMtlImporter::getTexture() {
     std::string texture;
     m_DataIt = getName<DataArrayIt>( m_DataIt, m_DataItEnd, texture );
     if ( NULL!=out ) {
+        m_pModel->m_TextureCount++;
         out->Set( texture );
     }
 }
